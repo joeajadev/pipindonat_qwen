@@ -3,51 +3,50 @@ require 'config.php';
 require 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $product_id = $_POST['product_id'];
-    $quantity = $_POST['quantity'];
-    $branch_id = $_SESSION['branch_id'];
-    
-    // Ambil harga
-    $stmt = $pdo->prepare("SELECT price FROM products WHERE id = ?");
-    $stmt->execute([$product_id]);
-    $price = $stmt->fetchColumn();
-    $total = $price * $quantity;
+    $username = $_POST['username'];
+    $password = $_POST['password'];
 
-    $stmt = $pdo->prepare("INSERT INTO sales (branch_id, product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, ?, CURDATE())");
-    $stmt->execute([$branch_id, $product_id, $quantity, $total]);
-    
-    $success = "Transaksi berhasil disimpan!";
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($password, $user['password'])) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['branch_id'] = $user['branch_id'];
+        header("Location: dashboard.php");
+        exit;
+    } else {
+        $error = "Username atau password salah!";
+    }
 }
-
-// Ambil produk
-$products = $pdo->query("SELECT * FROM products")->fetchAll();
-
-ob_start();
 ?>
-<h2 class="text-3xl font-bold text-sky-800 mb-6">Point of Sales (Cabang: <?= $_SESSION['branch_id'] ? 'ID '.$_SESSION['branch_id'] : 'Pusat' ?>)</h2>
-
-<?php if (isset($success)): ?>
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"><?= $success ?></div>
-<?php endif; ?>
-
-<div class="bg-white p-6 rounded-lg shadow-md border border-sky-200">
-    <form method="POST" class="space-y-4">
-        <div>
-            <label class="block text-sky-800 font-semibold mb-2">Pilih Donat</label>
-            <select name="product_id" class="w-full border border-sky-300 rounded p-3 focus:ring-2 focus:ring-sky-500" required>
-                <?php foreach ($products as $p): ?>
-                    <option value="<?= $p['id'] ?>"><?= $p['name'] ?> - Rp <?= number_format($p['price'], 0, ',', '.') ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sky-800 font-semibold mb-2">Jumlah</label>
-            <input type="number" name="quantity" min="1" class="w-full border border-sky-300 rounded p-3 focus:ring-2 focus:ring-sky-500" required>
-        </div>
-        <button type="submit" class="bg-sky-600 text-white px-6 py-3 rounded-lg hover:bg-sky-700 font-bold w-full">Proses Transaksi</button>
-    </form>
-</div>
-<?php
-$content = ob_get_clean();
-include 'layout.php';
-?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Donat Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-sky-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-96 border-t-4 border-sky-500">
+        <h2 class="text-2xl font-bold text-sky-700 mb-6 text-center">🍩 Login Donat Shop</h2>
+        <?php if (isset($error)): ?>
+            <p class="text-red-500 text-sm mb-4 text-center"><?= $error ?></p>
+        <?php endif; ?>
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block text-sky-800 mb-2">Username</label>
+                <input type="text" name="username" class="w-full border border-sky-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sky-800 mb-2">Password</label>
+                <input type="password" name="password" class="w-full border border-sky-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+            </div>
+            <button type="submit" class="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700 transition">Masuk</button>
+        </form>
+        <p class="text-xs text-gray-500 mt-4 text-center">Gunakan: admin / password123</p>
+    </div>
+</body>
+</html>

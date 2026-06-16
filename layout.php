@@ -1,52 +1,57 @@
 <?php
-require 'config.php';
-require 'db.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
-
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['role'] = $user['role'];
-        $_SESSION['branch_id'] = $user['branch_id'];
-        header("Location: dashboard.php");
-        exit;
-    } else {
-        $error = "Username atau password salah!";
-    }
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
 }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Donat Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Manajemen Donat</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-sky-100 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-96 border-t-4 border-sky-500">
-        <h2 class="text-2xl font-bold text-sky-700 mb-6 text-center">🍩 Login Donat Shop</h2>
-        <?php if (isset($error)): ?>
-            <p class="text-red-500 text-sm mb-4 text-center"><?= $error ?></p>
-        <?php endif; ?>
-        <form method="POST">
-            <div class="mb-4">
-                <label class="block text-sky-800 mb-2">Username</label>
-                <input type="text" name="username" class="w-full border border-sky-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
-            </div>
-            <div class="mb-6">
-                <label class="block text-sky-800 mb-2">Password</label>
-                <input type="password" name="password" class="w-full border border-sky-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
-            </div>
-            <button type="submit" class="w-full bg-sky-600 text-white py-2 rounded hover:bg-sky-700 transition">Masuk</button>
-        </form>
-        <p class="text-xs text-gray-500 mt-4 text-center">Gunakan: admin / password123</p>
+<body class="bg-sky-50 text-sky-900 font-sans">
+    <div class="flex h-screen">
+        <!-- Side Menu -->
+        <aside class="w-64 bg-sky-700 text-white flex flex-col">
+            <div class="p-6 text-2xl font-bold border-b border-sky-600">🍩 Donat Manager</div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="dashboard.php" class="block p-3 rounded hover:bg-sky-600 transition">📊 Dashboard</a>
+                <a href="pos.php" class="block p-3 rounded hover:bg-sky-600 transition">🛒 Point of Sales</a>
+                <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <a href="forecast.php" class="block p-3 rounded hover:bg-sky-600 transition">📈 Peramalan (ARIMAX)</a>
+                    <a href="mrp.php" class="block p-3 rounded hover:bg-sky-600 transition">🏭 MRP (Wagner-Whitin)</a>
+                <?php endif; ?>
+            </nav>
+            <div class="p-4 border-t border-sky-600">
+                <p class="text-sm text-sky-100">Halo, <?= htmlspecialchars($_SESSION['username']) ?></p>
+                <a href="logout.php" class="block mt-2 text-center bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-8">
+            <?= $content ?? '' ?>
+        </main>
     </div>
 </body>
 </html>
